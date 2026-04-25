@@ -1,81 +1,98 @@
 import streamlit as st
 import pandas as pd
+from pathlib import Path
 from engine import run_query
 from groq_client import MODELS
 from utils import build_schema
 
+# ── Page Config ─────────────────────────────────────────
 st.set_page_config(
-    page_title="AI Data Analyst (Groq)",
+    page_title="AI Data Analyst",
     page_icon="📊",
     layout="wide"
 )
+# ── Custom CSS (loaded from external file) ─────────────
+css_file = Path(__file__).with_name("styles.css")
+st.markdown(f"<style>{css_file.read_text(encoding='utf-8')}</style>", unsafe_allow_html=True)
 
-st.title("📊 AI Data Analyst")
-st.caption("Powered by Groq — free, fast, Say Fuck to OPENAI.")
-
-# ── Sidebar ────────────────────────────────────────────────────────────────────
+# ── Sidebar ─────────────────────────────────────────────
 with st.sidebar:
-    st.header("⚙️ Settings")
+    st.markdown("## AnalystAI")
+
+    st.markdown("### ⚙️ Settings")
     selected_label = st.selectbox("Model", list(MODELS.keys()))
     model = MODELS[selected_label]
-    show_code = st.toggle("Show generated code", value=False)
-    show_schema = st.toggle("Show DataFrame schema", value=False)
 
-    st.divider()
-    st.markdown("**Try these questions:**")
+    show_code = st.toggle("Show generated code", value=False)
+    show_schema = st.toggle("Show schema", value=False)
+
+    st.markdown("---")
+    st.markdown("### 💡 Examples")
+
     examples = [
         "Show the first 10 rows",
         "How many missing values are there?",
         "Plot a bar chart of sales by category",
-        "What is the average revenue per month?",
-        "Which 5 products have the highest total sales?",
-        "Plot a histogram of the price column",
-        "Show a correlation heatmap",
-        "Summarize this dataset in plain English",
-        "Are there any outliers in the revenue column?",
+        "Average revenue per month?",
+        "Top 5 products by sales?",
+        "Histogram of price column",
+        "Correlation heatmap",
+        "Summarize dataset",
+        "Find outliers in revenue"
     ]
+
     for ex in examples:
-        if st.button(ex, use_container_width=True, key=ex):
+        if st.button(ex):
             st.session_state["prefill"] = ex
 
-    st.divider()
-    if st.button("🗑️ Clear chat", use_container_width=True):
+    st.markdown("---")
+    if st.button("🗑 Clear Chat"):
         st.session_state.history = []
         st.session_state.llm_history = []
         st.rerun()
 
-# ── File upload ────────────────────────────────────────────────────────────────
-uploaded = st.file_uploader("Upload your data file", type=["csv", "xlsx", "xls"])
+# ── Header Section ──────────────────────────────────────
+st.markdown("""
+<div class="title">AI Data Analyst</div>
+<p style="text-align:center;color:#9db0ba;">
+Upload your dataset to analyze trends, generate charts, and get insights.
+</p>
+""", unsafe_allow_html=True)
 
+# ── Upload Section ──────────────────────────────────────
+uploaded = st.file_uploader("Upload CSV or Excel", type=["csv", "xlsx", "xls"])
+
+# ── If File Uploaded ────────────────────────────────────
 if uploaded:
+
     if uploaded.name.endswith(".csv"):
         df = pd.read_csv(uploaded)
     else:
         df = pd.read_excel(uploaded)
 
-    # Top-level metrics
+    # Metrics
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Rows", f"{df.shape[0]:,}")
     c2.metric("Columns", df.shape[1])
-    c3.metric("Missing values", int(df.isnull().sum().sum()))
-    c4.metric("Numeric cols", int((df.dtypes != "object").sum()))
+    c3.metric("Missing", int(df.isnull().sum().sum()))
+    c4.metric("Numeric", int((df.dtypes != "object").sum()))
 
+    # Schema
     if show_schema:
-        with st.expander("DataFrame schema"):
+        with st.expander("Schema"):
             st.code(build_schema(df))
 
-    with st.expander("Data preview (first 20 rows)"):
-        st.dataframe(df.head(20), use_container_width=True)
+    # Preview
+    with st.expander("Preview"):
+        st.dataframe(df.head(20))
 
-    st.divider()
-
-    # ── Session state ────────────────────────────────────────────────────────
+    # Session state
     if "history" not in st.session_state:
-        st.session_state.history = []      # display messages
+        st.session_state.history = []
     if "llm_history" not in st.session_state:
-        st.session_state.llm_history = []  # messages sent to LLM
+        st.session_state.llm_history = []
 
-    # ── Render previous messages ─────────────────────────────────────────────
+    # Show chat history
     for msg in st.session_state.history:
         with st.chat_message(msg["role"]):
             if msg.get("type") == "chart":
@@ -84,33 +101,33 @@ if uploaded:
                 st.error(msg["content"])
             else:
                 st.write(msg["content"])
+
             if show_code and msg.get("code") and msg["role"] == "assistant":
-                with st.expander("Generated code"):
+                with st.expander("Code"):
                     st.code(msg["code"], language="python")
 
-    # ── New question ─────────────────────────────────────────────────────────
+    # Input
     prefill = st.session_state.pop("prefill", "")
-    question = st.chat_input("Ask anything about your data...")
+    question = st.chat_input("Ask about your data...")
+
     if prefill:
         question = prefill
 
     if question:
-        # Show user message
         st.session_state.history.append({"role": "user", "content": question})
+
         with st.chat_message("user"):
             st.write(question)
 
-        # Run query
         with st.chat_message("assistant"):
-            with st.spinner(f"Groq is thinking..."):
+            with st.spinner("Thinking..."):
                 result = run_query(
                     df=df,
                     question=question,
                     history=st.session_state.llm_history,
-                    model=model,
+                    model=model
                 )
 
-            # Render result
             if result["type"] == "chart":
                 st.image(result["content"])
             elif result["type"] == "error":
@@ -119,22 +136,22 @@ if uploaded:
                 st.write(result["content"])
 
             if show_code:
-                with st.expander("Generated code"):
+                with st.expander("Generated Code"):
                     st.code(result.get("code", ""), language="python")
 
-        # Save to histories
         st.session_state.history.append({
             "role": "assistant",
             "type": result["type"],
             "content": result["content"],
-            "code": result.get("code", ""),
+            "code": result.get("code", "")
         })
-        # For multi-turn: add the Q+A to llm_history
+
         st.session_state.llm_history.append({"role": "user", "content": question})
         st.session_state.llm_history.append({
             "role": "assistant",
             "content": f"```python\n{result.get('code','')}\n```"
         })
 
+# ── Empty State ─────────────────────────────────────────
 else:
-    st.info("👆 Upload a CSV or Excel file above to get started.")
+    st.info("👆 Upload a dataset to start analysis.")   

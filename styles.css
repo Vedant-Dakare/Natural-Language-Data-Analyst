@@ -1,0 +1,289 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Manrope:wght@400;500;600&display=swap');
+
+:root {
+    --bg-0: #0d1317;
+    --bg-1: #101b21;
+    --bg-2: #16262e;
+    --surface: #132027;
+    --surface-soft: #1a2a33;
+    --line: #2d4754;
+    --text: #e4edf1;
+    --muted: #9db0ba;
+    --accent: #4bc0a1;
+    --accent-2: #f2a65a;
+    --danger: #ff7e7e;
+    --accent-soft: #7dd6bf;
+}
+
+/* App background and text system */
+html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
+    color: var(--text);
+    background:
+        radial-gradient(900px 450px at 8% -8%, rgba(75, 192, 161, 0.14), transparent 60%),
+        radial-gradient(800px 380px at 95% 0%, rgba(242, 166, 90, 0.12), transparent 55%),
+        linear-gradient(140deg, var(--bg-0) 0%, var(--bg-1) 55%, #0f171d 100%);
+    font-family: "Manrope", sans-serif;
+}
+
+.stApp {
+    background: transparent;
+}
+
+/* Sidebar */
+section[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #0f1c23 0%, #12232c 100%);
+    border-right: 1px solid var(--line);
+}
+
+section[data-testid="stSidebar"] * {
+    color: var(--text) !important;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+    color: var(--text);
+    font-family: "Space Grotesk", sans-serif;
+    letter-spacing: 0.2px;
+}
+
+.title {
+    font-family: "Space Grotesk", sans-serif;
+    font-size: clamp(2rem, 3.5vw, 2.7rem);
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    text-align: center;
+    margin: 10px 0 4px;
+    color: #edf6f9;
+    text-shadow: 0 8px 26px rgba(0, 0, 0, 0.35);
+}
+
+/* Widgets */
+label, p, span, div {
+    color: var(--text);
+}
+
+[data-testid="stMarkdownContainer"] p {
+    color: var(--muted);
+}
+
+[data-testid="stMetric"] {
+    background: linear-gradient(180deg, rgba(20, 34, 42, 0.9), rgba(16, 27, 33, 0.92));
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 0.55rem 0.6rem;
+}
+
+[data-testid="stMetricLabel"], [data-testid="stMetricValue"] {
+    color: var(--text) !important;
+}
+
+/* Chat cards */
+[data-testid="stChatMessage"] {
+    background: linear-gradient(180deg, rgba(19, 33, 40, 0.92), rgba(15, 25, 31, 0.94));
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 12px;
+}
+
+/* Inputs */
+[data-testid="stTextInput"] input,
+[data-testid="stTextArea"] textarea,
+[data-baseweb="input"] input,
+[data-baseweb="textarea"] textarea {
+    background-color: #102028 !important;
+    color: var(--text) !important;
+    border: 1px solid var(--line) !important;
+    border-radius: 10px !important;
+}
+
+[data-baseweb="select"] {
+    border-radius: 10px;
+}
+
+/* Buttons */
+.stButton > button {
+    background: linear-gradient(145deg, #1a2d36, #203641);
+    color: var(--text);
+    border-radius: 11px;
+    border: 1px solid #365564;
+    font-weight: 600;
+    transition: transform 0.12s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.stButton > button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(15, 26, 31, 0.5);
+    border-color: #4a7485;
+    filter: saturate(1.08);
+}
+
+.stButton > button:focus {
+    outline: 2px solid rgba(242, 166, 90, 0.55) !important;
+    outline-offset: 1px;
+}
+
+/* Sidebar buttons should look like a cohesive menu list */
+section[data-testid="stSidebar"] .stButton > button {
+    width: 100%;
+    background: linear-gradient(140deg, #183440, #1d3f4c);
+    border: 1px solid #346276;
+    color: #dff3f4;
+    padding: 0.6rem 0.8rem;
+}
+
+section[data-testid="stSidebar"] .stButton > button:hover {
+    border-color: var(--accent-soft);
+    box-shadow: 0 10px 22px rgba(8, 18, 23, 0.5);
+}
+
+/* Keep dangerous action distinct but still on-brand */
+/* File uploader */
+[data-testid="stFileUploader"] {
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: linear-gradient(160deg, rgba(22, 38, 46, 0.9), rgba(17, 28, 35, 0.88));
+    padding: 0.8rem 0.9rem 0.2rem;
+    margin: 0.5rem 0 1rem;
+    box-shadow: 0 16px 42px rgba(0, 0, 0, 0.25);
+    animation: riseIn 340ms ease-out;
+}
+
+[data-testid="stFileUploader"] > div {
+    background: transparent !important;
+}
+
+[data-testid="stFileUploaderDropzone"] {
+    background: rgba(15, 30, 37, 0.72) !important;
+    border: 1.5px dashed #3f6271 !important;
+    border-radius: 12px !important;
+    padding: 1rem !important;
+}
+
+[data-testid="stFileUploaderDropzone"] > div {
+    background: transparent !important;
+}
+
+[data-testid="stFileUploaderDropzone"] button {
+    background: linear-gradient(145deg, #1a2d36, #203641) !important;
+    color: var(--text) !important;
+    border: 1px solid #3f6271 !important;
+    border-radius: 10px !important;
+}
+
+[data-testid="stFileUploaderDropzoneInstructions"] {
+    color: var(--muted) !important;
+}
+
+/* Expanders and code */
+details {
+    background: linear-gradient(180deg, rgba(20, 34, 42, 0.9), rgba(16, 27, 33, 0.92));
+    border-radius: 12px;
+    border: 1px solid var(--line);
+}
+
+pre, code {
+    background: #0d1a21 !important;
+    border-radius: 9px;
+}
+
+/* Alerts */
+[data-testid="stNotification"] {
+    border-radius: 12px;
+    border: 1px solid var(--line);
+}
+
+[data-testid="stAlert"] {
+    background: linear-gradient(135deg, rgba(21, 52, 74, 0.82), rgba(19, 43, 62, 0.86));
+    border: 1px solid #2f5f78;
+    border-radius: 12px;
+}
+
+[data-testid="stAlert"] p {
+    color: #c9e3ef !important;
+}
+
+/* Chat input dock */
+[data-testid="stBottom"],
+[data-testid="stBottom"] > div,
+[data-testid="stBottomBlockContainer"],
+[data-testid="stBottomBlockContainer"] > div,
+[data-testid="stAppScrollToBottomContainer"],
+[data-testid="stChatInput"] {
+    background: transparent !important;
+    border: none !important;
+}
+
+[data-testid="stChatInput"] {
+    padding: 0.6rem 0 0.75rem;
+}
+
+[data-testid="stChatInput"] > div {
+    border: 1px solid #2f5968 !important;
+    border-radius: 14px !important;
+    background: linear-gradient(145deg, rgba(16, 34, 42, 0.95), rgba(13, 29, 36, 0.95)) !important;
+    padding: 0.35rem 0.5rem !important;
+    box-shadow: 0 12px 30px rgba(6, 14, 18, 0.45);
+}
+
+[data-testid="stChatInput"] > div * {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+}
+
+[data-testid="stChatInput"] [data-testid="stChatInputTextArea"] {
+    background: transparent !important;
+    color: var(--text) !important;
+    border: 0 !important;
+    outline: none !important;
+    font-size: 1.08rem !important;
+    line-height: 1.35 !important;
+    padding: 0.55rem 0.5rem !important;
+}
+
+[data-testid="stChatInputTextArea"]::placeholder {
+    color: #8ca5af !important;
+}
+
+[data-testid="stChatInputSubmitButton"] {
+    background: linear-gradient(145deg, #2a8f78, #3ba88e) !important;
+    border: 1px solid #57bda3 !important;
+    color: #062028 !important;
+    border-radius: 10px !important;
+    min-height: 2.55rem;
+    min-width: 2.55rem;
+}
+
+[data-testid="stChatInputSubmitButton"]:hover {
+    filter: brightness(1.05);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #395864;
+    border-radius: 10px;
+}
+
+/* Motion */
+@keyframes riseIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .title {
+        font-size: 1.8rem;
+    }
+}
