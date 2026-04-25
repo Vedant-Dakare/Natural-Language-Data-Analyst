@@ -1,29 +1,108 @@
+import json
+import re
 import pandas as pd
-import matplotlib
-matplotlib.use("Agg")         
-import matplotlib.pyplot as plt
-import traceback
-import uuid
-import os
 
 from groq_client import ask_groq
-from utils import build_schema, extract_code
+from utils import build_schema
 
-CHART_DIR = "/tmp/groq_charts"
-os.makedirs(CHART_DIR, exist_ok=True)
+SYSTEM_PROMPT = """You are an advanced AI Data Analyst and Visualization Designer.
 
-SYSTEM_PROMPT = """You are an expert Python data analyst.
-A pandas DataFrame called `df` is already loaded in memory.
-When the user asks a question:
-1. Write ONLY a Python code block (no explanation outside it).
-2. For charts: use matplotlib, save the figure to the variable `result_path`
-   using plt.savefig(result_path, bbox_inches='tight') then plt.close().
-3. For text/numeric answers: store the final answer in a variable called `answer`.
-4. Do NOT call plt.show().
-5. Do NOT import pandas — df is already available.
-6. Use plotly only if the user explicitly asks for interactive charts.
-7. Keep code concise and correct.
+Your goal is NOT just to answer queries, but to present results in a visually rich, insightful, and professional way that is easy to understand and impressive to users.
+
+You are given:
+1) A pandas DataFrame schema
+2) A user query
+
+You must return ONLY valid JSON (no explanation, no markdown).
+
+OUTPUT FORMAT:
+{
+  "type": "chart" | "table" | "graph",
+  "title": "Clear and meaningful title",
+  "description": "Short 1-2 line insight explaining the result",
+  "data": {...},
+  "graph": {
+    "nodes": [],
+    "edges": []
+  },
+  "style": {
+    "chart_type": "bar" | "line" | "histogram",
+    "color_theme": "modern",
+    "highlight": "important trend or value",
+    "x_label": "",
+    "y_label": ""
+  }
+}
+
+RULES:
+1. Do NOT return plain/raw data only. Always include title, description, and structured format.
+2. Relationships/hierarchy => type="graph".
+3. Comparisons/trends => type="chart".
+4. Raw data => type="table" only when necessary.
+5. Graph nodes must be meaningful/readable with descriptive labels.
+6. Graph edges must describe relationships like belongs_to / has_sales / related_to.
+7. Chart selection:
+   - time => line chart
+   - category comparison => bar chart
+   - distribution => histogram
+8. Always include axis labels for charts.
+9. Description must explain a key finding and never be generic.
+10. Never return text outside JSON.
 """
+
+
+def _extract_json(text: str) -> dict | None:
+    text = text.strip()
+    try:
+        return json.loads(text)
+    except Exception:
+        pass
+
+    # Fallback: extract first JSON object from noisy responses
+    match = re.search(r"\{[\s\S]*\}", text)
+    if not match:
+        return None
+
+    try:
+        return json.loads(match.group(0))
+    except Exception:
+        return None
+
+
+def _normalize_result(parsed: dict | None, raw: str) -> dict:
+    if not parsed:
+        return {
+            "type": "error",
+            "content": "Model returned invalid JSON output.",
+            "raw": raw,
+            "json": None,
+        }
+
+    result_type = parsed.get("type", "table")
+    if result_type not in {"chart", "table", "graph"}:
+        result_type = "table"
+
+    parsed.setdefault("title", "Data Analysis Result")
+    parsed.setdefault("description", "Generated insight based on your query.")
+    parsed.setdefault("data", {})
+    parsed.setdefault("graph", {"nodes": [], "edges": []})
+    parsed.setdefault(
+        "style",
+        {
+            "chart_type": "bar",
+            "color_theme": "modern",
+            "highlight": "",
+            "x_label": "",
+            "y_label": "",
+        },
+    )
+
+    return {
+        "type": result_type,
+        "content": parsed,
+        "raw": raw,
+        "json": parsed,
+    }
 
 def build_messages(
     schema: str,
@@ -56,47 +135,19 @@ def run_query(
     schema = build_schema(df)
     messages = build_messages(schema, question, history)
 
-    # Call Groq
     raw = ask_groq(messages, model=model)
-    code = extract_code(raw)
+    parsed = _extract_json(raw)
 
-    # Unique chart path per query
-    chart_path = os.path.join(CHART_DIR, f"chart_{uuid.uuid4().hex[:8]}.png")
-
-    # Sandbox: expose only what the code needs
-    exec_env = {
-        "df": df.copy(),
-        "pd": pd,
-        "plt": plt,
-        "result_path": chart_path,
-        "answer": None,
-    }
-
-    try:
-        exec(compile(code, "<llm_code>", "exec"), exec_env)
-    except Exception as e:
-        # Retry once with the error fed back to the model
+    if parsed is None:
         fix_messages = messages + [
-            {"role": "assistant", "content": f"```python\n{code}\n```"},
-            {"role": "user",
-             "content": f"That code raised an error:\n{e}\nPlease fix it."},
+            {"role": "assistant", "content": raw},
+            {
+                "role": "user",
+                "content": "The output was not valid JSON. Return ONLY valid JSON that matches the required schema.",
+            },
         ]
-        raw2 = ask_groq(fix_messages, model=model)
-        code = extract_code(raw2)
-        try:
-            exec(compile(code, "<llm_code_fixed>", "exec"), exec_env)
-        except Exception as e2:
-            return {
-                "type": "error",
-                "content": f"Error after retry:\n{e2}",
-                "code": code,
-                "raw": raw,
-            }
+        raw_retry = ask_groq(fix_messages, model=model)
+        parsed = _extract_json(raw_retry)
+        return _normalize_result(parsed, raw_retry)
 
-    # Detect result type
-    if os.path.exists(chart_path):
-        return {"type": "chart", "content": chart_path, "code": code, "raw": raw}
-    elif exec_env["answer"] is not None:
-        return {"type": "text", "content": str(exec_env["answer"]), "code": code, "raw": raw}
-    else:
-        return {"type": "text", "content": "Done — no explicit answer returned.", "code": code, "raw": raw}
+    return _normalize_result(parsed, raw)
