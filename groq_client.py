@@ -1,5 +1,8 @@
 import os
+import re
+import time
 from groq import Groq
+from groq import RateLimitError
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -18,15 +21,35 @@ def ask_groq(
     model: str = "llama-3.3-70b-versatile",
     temperature: float = 0.1,
     max_tokens: int = 1024,
+    retries: int = 4,
 ) -> str:
     """
     messages: list of {"role": "system"/"user"/"assistant", "content": "..."}
     Returns the assistant's reply as a plain string.
     """
-    response = client.chat.completions.create(
-        model=model,
-        messages=messages,
-        temperature=temperature,
-        max_tokens=max_tokens,
-    )
-    return response.choices[0].message.content.strip()
+    max_tokens_local = max_tokens
+    for attempt in range(retries + 1):
+        try:
+            response = client.chat.completions.create(
+                model=model,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens_local,
+            )
+            return response.choices[0].message.content.strip()
+        except RateLimitError as exc:
+            if attempt >= retries:
+                raise
+
+            # Parse provider hint like "Please try again in 620ms" when present.
+            message = str(exc)
+            retry_ms_match = re.search(r"try again in\s+(\d+)ms", message, flags=re.IGNORECASE)
+            wait_seconds = 0.9
+            if retry_ms_match:
+                wait_seconds = max(float(retry_ms_match.group(1)) / 1000.0, 0.25)
+
+            wait_seconds += 0.35 * attempt
+            max_tokens_local = max(256, int(max_tokens_local * 0.85))
+            time.sleep(wait_seconds)
+
+    raise RuntimeError("Groq request failed after retries.")
