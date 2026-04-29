@@ -77,6 +77,63 @@ label, p, span, div {
     color: var(--text) !important;
 }
 
+/* Rich result header block */
+.result-shell {
+    background: linear-gradient(145deg, rgba(24, 45, 55, 0.78), rgba(14, 30, 36, 0.82));
+    border: 1px solid #335768;
+    border-radius: 14px;
+    padding: 0.85rem 1rem 0.92rem;
+    margin-bottom: 0.7rem;
+    box-shadow: 0 18px 34px rgba(3, 10, 13, 0.26);
+}
+
+.result-topline {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin-bottom: 0.25rem;
+}
+
+.result-icon {
+    font-size: 1.05rem;
+    color: #8ce0cb;
+}
+
+.result-badge {
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #d8f4ea;
+    background: linear-gradient(130deg, rgba(72, 167, 145, 0.36), rgba(38, 98, 113, 0.26));
+    border: 1px solid rgba(127, 203, 186, 0.35);
+    border-radius: 999px;
+    padding: 0.22rem 0.5rem;
+}
+
+.result-title {
+    font-family: "Space Grotesk", sans-serif;
+    font-size: clamp(1.2rem, 2.1vw, 1.7rem);
+    font-weight: 700;
+    color: #eef8fb;
+    line-height: 1.2;
+}
+
+.result-description {
+    color: #b8cbd4;
+    margin: 0.42rem 0 0;
+    line-height: 1.42;
+}
+
+.insight-pill {
+    margin-top: 0.45rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: 11px;
+    border: 1px solid rgba(96, 180, 157, 0.45);
+    background: linear-gradient(125deg, rgba(56, 126, 111, 0.22), rgba(23, 69, 81, 0.22));
+    color: #d8f0e9;
+    font-weight: 600;
+}
+
 /* Chat cards */
 [data-testid="stChatMessage"] {
     background: linear-gradient(180deg, rgba(19, 33, 40, 0.92), rgba(15, 25, 31, 0.94));

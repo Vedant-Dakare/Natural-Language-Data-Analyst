@@ -41,13 +41,14 @@ RULES:
 4. Raw data => type="table" only when necessary.
 5. Graph nodes must be meaningful/readable with descriptive labels.
 6. Graph edges must describe relationships like belongs_to / has_sales / related_to.
-7. Chart selection:
+7. For graph output, represent the full dataset structure with a root dataset node, one node per column, and summary/value nodes where appropriate. Never return an empty graph.
+8. Chart selection:
    - time => line chart
    - category comparison => bar chart
    - distribution => histogram
-8. Always include axis labels for charts.
-9. Description must explain a key finding and never be generic.
-10. Never return text outside JSON.
+9. Always include axis labels for charts.
+10. Description must explain a key finding and never be generic.
+11. Never return text outside JSON.
 """
 
 
@@ -135,7 +136,16 @@ def run_query(
     schema = build_schema(df)
     messages = build_messages(schema, question, history)
 
-    raw = ask_groq(messages, model=model)
+    try:
+        raw = ask_groq(messages, model=model)
+    except Exception as exc:
+        return {
+            "type": "error",
+            "content": f"The model is currently busy (rate limited). Please try again in a few seconds. Details: {exc}",
+            "raw": str(exc),
+            "json": None,
+        }
+
     parsed = _extract_json(raw)
 
     if parsed is None:
@@ -146,7 +156,15 @@ def run_query(
                 "content": "The output was not valid JSON. Return ONLY valid JSON that matches the required schema.",
             },
         ]
-        raw_retry = ask_groq(fix_messages, model=model)
+        try:
+            raw_retry = ask_groq(fix_messages, model=model)
+        except Exception as exc:
+            return {
+                "type": "error",
+                "content": f"The model is currently busy (rate limited). Please try again in a few seconds. Details: {exc}",
+                "raw": str(exc),
+                "json": None,
+            }
         parsed = _extract_json(raw_retry)
         return _normalize_result(parsed, raw_retry)
 
